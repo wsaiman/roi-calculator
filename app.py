@@ -67,6 +67,22 @@ st.markdown(
         background-color: #FFFF00 !important;
         font-weight: 600;
     }
+
+    .app-title { font-size: 2.1rem; font-weight: 800; margin-bottom: 10px; }
+    .fill-hint {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: #FFFDE0;
+        border: 1px solid #FFD600;
+        border-left: 6px solid #FFD600;
+        border-radius: 8px;
+        padding: 10px 14px;
+        margin-bottom: 22px;
+        font-size: 0.92rem;
+        color: #4a4000;
+    }
+    .fill-hint-icon { font-size: 1.4rem; line-height: 1; }
     </style>
     """,
     unsafe_allow_html=True,
@@ -116,7 +132,12 @@ def computed_field(letter, item, formula, amount_str, color, requirement="", rem
     )
 
 
-st.title("ROI Calculator")
+st.markdown(
+    '<div class="app-title">🚗 ROI Calculator</div>'
+    '<div class="fill-hint"><span class="fill-hint-icon">✏️</span>'
+    '<span><strong>Fill up the yellow input box only</strong> — semua baris lain kira sendiri.</span></div>',
+    unsafe_allow_html=True,
+)
 
 # ==================================================================
 # Section 1 — National (baseline)
