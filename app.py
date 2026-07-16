@@ -1,8 +1,4 @@
-from datetime import datetime
-
 import streamlit as st
-from fpdf import FPDF
-from fpdf.enums import XPos, YPos
 
 st.set_page_config(page_title="ROI Calculator", layout="wide")
 
@@ -41,54 +37,6 @@ st.markdown(
 
 def fmt(x, decimals=0):
     return f"{x:,.{decimals}f}"
-
-
-def build_pdf(report_rows, roi_pct, roi_pass, remarks):
-    pdf = FPDF()
-    pdf.set_auto_page_break(auto=True, margin=15)
-    pdf.add_page()
-
-    pdf.set_font("Helvetica", "B", 16)
-    pdf.cell(0, 10, "ROI Calculator Report", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
-    pdf.set_font("Helvetica", "", 10)
-    pdf.set_text_color(100, 100, 100)
-    pdf.cell(0, 6, f"Generated: {datetime.now().strftime('%d %b %Y, %H:%M')}", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
-    pdf.set_text_color(0, 0, 0)
-    pdf.ln(4)
-
-    pdf.set_font("Helvetica", "B", 11)
-    pdf.set_fill_color(0, 112, 192)
-    pdf.set_text_color(255, 255, 255)
-    pdf.cell(12, 8, "#", border=1, fill=True, align="C")
-    pdf.cell(90, 8, "Item", border=1, fill=True)
-    pdf.cell(40, 8, "Amount", border=1, fill=True, align="R")
-    pdf.ln()
-    pdf.set_text_color(0, 0, 0)
-    pdf.set_font("Helvetica", "", 10)
-
-    for letter, item, amount in report_rows:
-        pdf.cell(12, 7, letter, border=1, align="C")
-        pdf.cell(90, 7, item, border=1)
-        pdf.cell(40, 7, amount, border=1, align="R")
-        pdf.ln()
-
-    pdf.ln(4)
-    pdf.set_font("Helvetica", "B", 12)
-    fill = (198, 239, 206) if roi_pass else (255, 199, 206)
-    pdf.set_fill_color(*fill)
-    pdf.cell(0, 10, f"ROI: {roi_pct:,.0f}%  ({'MEETS' if roi_pass else 'BELOW'} 100% requirement)",
-              border=1, fill=True, align="C", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
-
-    pdf.ln(6)
-    pdf.set_font("Helvetica", "B", 11)
-    pdf.cell(0, 7, "Remarks", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
-    pdf.set_font("Helvetica", "", 9)
-    for letter, item, remark in remarks:
-        if remark:
-            pdf.multi_cell(0, 5, f"{letter}) {item}: {remark}",
-                            new_x=XPos.LMARGIN, new_y=YPos.NEXT)
-
-    return bytes(pdf.output())
 
 
 def row(letter, item, formula, amount_html, requirement, remark):
@@ -209,54 +157,4 @@ row("s", "Total Taxes Foregone", "q*l",
 st.caption(
     "Nota: kotak kuning sahaja yang boleh diedit (a, b, c, h, j, k, l). "
     "Semua baris lain dikira secara automatik mengikut formula asal dalam ROI Calculator.xlsx."
-)
-
-st.divider()
-
-report_rows = [
-    ("a", "Excise Rate", f"{a * 100:,.0f}%"),
-    ("b", "Ex-Work", fmt(b, 2)),
-    ("c", "*ILP Standard", fmt(c, 2)),
-    ("d", "Excise Duty (W/out ILP)", fmt(d)),
-    ("e", "Excise Duty (With ILP Standard)", fmt(e)),
-    ("f", "Sales Tax (With ILP Standard)", fmt(f, 2)),
-    ("g", "Total Taxes", fmt(g, 2)),
-    ("h", "ILP Ratio", f"{h:,.2f}"),
-    ("i", "ILP Amount (EEV)", fmt(i)),
-    ("j", "Investment", fmt(j, 2)),
-    ("k", "Export (Net Export Value)", fmt(k, 2)),
-    ("l", "Volume Request (units)", fmt(l)),
-    ("n", "Excise Duty Per unit", fmt(n)),
-    ("o", "Sales Tax Per Unit", fmt(o)),
-    ("p", "Tax Payment per unit", fmt(p)),
-    ("q", "Tax Forgone per unit", fmt(q)),
-    ("r", "Total Taxes Payment", fmt(r)),
-    ("s", "Total Taxes Foregone", fmt(s)),
-]
-
-remarks = [
-    ("a", "Excise Rate", "Excise rate body type and engine. Refer to Table 1."),
-    ("b", "Ex-Work", "Total Cost to Produce Vehicles in Plant."),
-    ("e", "Excise Duty (With ILP Standard)", "MIN. 15% Duty payment to gov for non-national"),
-    ("h", "ILP Ratio", "Best ratio based on ROI formula by MARii."),
-    ("i", "ILP Amount (EEV)", "New ILP amount increased by (h) ratio from ILP standard"),
-    ("j", "Investment", "Any investment related to automotive"),
-    ("k", "Export (Net Export Value)", "Any export, CBU or component."),
-    ("l", "Volume Request (units)", "Any additional unit will require additional investment."),
-    ("m", "ROI > 100%", "Must be >= 100% to be get additional ILP (EEV Incentive)"),
-    ("n", "Excise Duty Per unit", "MIN. 15% Duty payment to gov for non-national"),
-    ("p", "Tax Payment per unit", "Actual tax paid with EEV incentive"),
-    ("q", "Tax Forgone per unit", "Higher tax forgone reduce ROI%"),
-    ("r", "Total Taxes Payment", "Tax Payment with EEV incentive"),
-    ("s", "Total Taxes Foregone", "Tax Foregone by the government"),
-]
-
-pdf_bytes = build_pdf(report_rows, roi * 100, roi >= 1.0, remarks)
-
-st.download_button(
-    label="📄 Download Report (PDF)",
-    data=pdf_bytes,
-    file_name=f"ROI_Calculator_Report_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf",
-    mime="application/pdf",
-    type="primary",
 )

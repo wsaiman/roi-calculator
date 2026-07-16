@@ -12,7 +12,6 @@ exactly following the original formulas, item names and remarks from the source 
 - **National** and **Non-National (EEV)** calculation blocks, laid out like the original spreadsheet
 - Live recalculation of Excise Duty, Sales Tax, Total Taxes, and **ROI %** eligibility (≥ 100% requirement)
 - Colour-coded cells matching the original Excel (yellow = input, blue/purple = computed, green = pass)
-- One-click **PDF report** download to share results with stakeholders
 
 ## 🖥️ Run locally
 
