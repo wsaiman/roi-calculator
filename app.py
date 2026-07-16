@@ -23,13 +23,14 @@ st.markdown(
         margin-bottom: 10px;
         background: #fff;
     }
-    .calc-card.input-card {
-        background: #FFFDE0;
-        border-left: 6px solid #FFD600;
-    }
     .calc-card.blue-card { border-left: 6px solid #44B3E1; }
     .calc-card.purple-card { border-left: 6px solid #9999FF; }
     .calc-card.green-card { border-left: 6px solid #2FA84F; background: #EEFBF1; }
+
+    div[data-testid="stVerticalBlockBorderWrapper"]:has(div[data-testid="stNumberInput"]) {
+        border-left: 6px solid #FFD600 !important;
+        background: #FFFDE0;
+    }
 
     .card-head {
         display: flex;
@@ -66,7 +67,6 @@ st.markdown(
         background-color: #FFFF00 !important;
         font-weight: 600;
     }
-    div[data-testid="stNumberInput"] { margin-top: -6px; margin-bottom: 2px; }
     </style>
     """,
     unsafe_allow_html=True,
@@ -77,43 +77,41 @@ def fmt(x, decimals=0):
     return f"{x:,.{decimals}f}"
 
 
+def nz(x):
+    return x if x is not None else 0.0
+
+
 def section_title(title):
-    st.markdown(f"<div class='section-title'>{title}</div>", unsafe_allow_html=True)
+    st.markdown(f'<div class="section-title">{title}</div>', unsafe_allow_html=True)
 
 
-def input_field(letter, item, key, value, remark="", formula="N/A", **kwargs):
-    st.markdown(
-        f"""
-        <div class="calc-card input-card">
-            <div class="card-head">
-                <span class="card-title"><span class="letter-badge">{letter}</span>{item}</span>
-                <span class="formula-tag">{formula}</span>
-            </div>
-        """,
-        unsafe_allow_html=True,
-    )
-    val = st.number_input(item, value=value, label_visibility="collapsed", key=key, **kwargs)
-    if remark:
-        st.markdown(f"<div class='meta-line'>{remark}</div>", unsafe_allow_html=True)
-    st.markdown("</div>", unsafe_allow_html=True)
+def input_field(letter, item, key, remark="", formula="N/A", placeholder=None, **kwargs):
+    with st.container(border=True):
+        st.markdown(
+            f'<div class="card-head">'
+            f'<span class="card-title"><span class="letter-badge">{letter}</span>{item}</span>'
+            f'<span class="formula-tag">{formula}</span></div>',
+            unsafe_allow_html=True,
+        )
+        val = st.number_input(
+            item, value=None, placeholder=placeholder,
+            label_visibility="collapsed", key=key, **kwargs,
+        )
+        if remark:
+            st.markdown(f'<div class="meta-line">{remark}</div>', unsafe_allow_html=True)
     return val
 
 
 def computed_field(letter, item, formula, amount_str, color, requirement="", remark=""):
-    req_html = f"<div class='req-line'>Requirement: {requirement}</div>" if requirement else ""
-    remark_html = f"<div class='meta-line'>{remark}</div>" if remark else ""
+    req_html = f'<div class="req-line">Requirement: {requirement}</div>' if requirement else ""
+    remark_html = f'<div class="meta-line">{remark}</div>' if remark else ""
     st.markdown(
-        f"""
-        <div class="calc-card {color}-card">
-            <div class="card-head">
-                <span class="card-title"><span class="letter-badge">{letter}</span>{item}</span>
-                <span class="formula-tag">{formula}</span>
-            </div>
-            <div class="amount-value">{amount_str}</div>
-            {req_html}
-            {remark_html}
-        </div>
-        """,
+        f'<div class="calc-card {color}-card">'
+        f'<div class="card-head">'
+        f'<span class="card-title"><span class="letter-badge">{letter}</span>{item}</span>'
+        f'<span class="formula-tag">{formula}</span></div>'
+        f'<div class="amount-value">{amount_str}</div>'
+        f'{req_html}{remark_html}</div>',
         unsafe_allow_html=True,
     )
 
@@ -123,11 +121,14 @@ st.title("ROI Calculator")
 # ==================================================================
 # Section 1 — National (baseline)
 # ==================================================================
-a = input_field("a", "Excise Rate", "a", 0.60, "Excise rate body type and engine. Refer to Table 1.",
-                 format="%.2f", step=0.01)
-b = input_field("b", "Ex-Work", "b", 65515.00, "Total Cost to Produce Vehicles in Plant.",
-                 format="%.2f", step=100.0)
-c = input_field("c", "*ILP Standard", "c", 27269.0, "", format="%.2f", step=100.0)
+a_in = input_field("a", "Excise Rate", "a", "Excise rate body type and engine. Refer to Table 1.",
+                    placeholder="cth: 0.60", format="%.2f", step=0.01)
+b_in = input_field("b", "Ex-Work", "b", "Total Cost to Produce Vehicles in Plant.",
+                    placeholder="cth: 65515.00", format="%.2f", step=100.0)
+c_in = input_field("c", "*ILP Standard", "c", "",
+                    placeholder="cth: 27269.00", format="%.2f", step=100.0)
+
+a, b, c = nz(a_in), nz(b_in), nz(c_in)
 
 d = b * a
 computed_field("d", "Excise Duty (W/out ILP)", "b*a", fmt(d), "blue")
@@ -148,19 +149,22 @@ computed_field("g", "Total Taxes", "e+f", fmt(g, 2), "blue")
 # ==================================================================
 section_title("Non-National")
 
-h = input_field("h", "ILP Ratio", "h", 1.92, "Best ratio based on ROI formula by MARii.",
-                format="%.2f", step=0.01)
+h_in = input_field("h", "ILP Ratio", "h", "Best ratio based on ROI formula by MARii.",
+                    placeholder="cth: 1.92", format="%.2f", step=0.01)
 
+h = nz(h_in)
 i = c * h
 computed_field("i", "ILP Amount (EEV)", "c*h", fmt(i), "purple",
                 remark="New ILP amount increased by (h) ratio from ILP standard")
 
-j = input_field("j", "Investment", "j", 110000000.0, "Any investment related to automotive",
-                format="%.2f", step=100000.0)
-k = input_field("k", "Export (Net Export Value)", "k", 0.0, "Any export, CBU or component. Masukkan 0 jika tiada ('-')",
-                format="%.2f", step=1000.0)
-l = input_field("l", "Volume Request (units)", "l", 3500.0, "Any additional unit will require additional investment.",
-                format="%.0f", step=10.0)
+j_in = input_field("j", "Investment", "j", "Any investment related to automotive",
+                    placeholder="cth: 110000000.00", format="%.2f", step=100000.0)
+k_in = input_field("k", "Export (Net Export Value)", "k", "Any export, CBU or component.",
+                    placeholder="0 jika tiada", format="%.2f", step=1000.0)
+l_in = input_field("l", "Volume Request (units)", "l", "Any additional unit will require additional investment.",
+                    placeholder="cth: 3500", format="%.0f", step=10.0)
+
+j, k, l = nz(j_in), nz(k_in), nz(l_in)
 
 n = (b - i) * a
 o = (b + n - i) * 0.10
@@ -192,6 +196,6 @@ computed_field("s", "Total Taxes Foregone", "q*l", fmt(s), "purple",
                 remark="Tax Foregone by the government")
 
 st.caption(
-    "Nota: kotak kuning sahaja yang boleh diedit (a, b, c, h, j, k, l). "
+    "Nota: kotak kuning sahaja yang boleh diedit (a, b, c, h, j, k, l), kosong secara default. "
     "Semua baris lain dikira secara automatik mengikut formula asal dalam ROI Calculator.xlsx."
 )
