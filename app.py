@@ -1,6 +1,6 @@
 import streamlit as st
 
-st.set_page_config(page_title="Za Udang Enterprise", page_icon="🦐", layout="centered")
+st.set_page_config(page_title="ROI Calculator", page_icon="⚡", layout="centered")
 
 # ---------- Styling ----------
 st.markdown(
@@ -27,7 +27,8 @@ st.markdown(
     .calc-card.purple-card { border-left: 6px solid #9999FF; }
     .calc-card.green-card { border-left: 6px solid #2FA84F; background: #EEFBF1; }
 
-    div[data-testid="stVerticalBlockBorderWrapper"]:has(div[data-testid="stNumberInput"]) {
+    div[data-testid="stVerticalBlockBorderWrapper"]:has(div[data-testid="stNumberInput"]),
+    div[data-testid="stVerticalBlockBorderWrapper"]:has(div[data-testid="stTextInput"]) {
         border-left: 6px solid #FFD600 !important;
         background: #FFFDE0;
     }
@@ -63,7 +64,8 @@ st.markdown(
     .meta-line { color: #666; font-size: 0.82rem; margin-top: 2px; }
     .req-line { color: #a15c00; font-size: 0.82rem; margin-top: 2px; }
 
-    div[data-testid="stNumberInput"] input {
+    div[data-testid="stNumberInput"] input,
+    div[data-testid="stTextInput"] input {
         background-color: #FFFF00 !important;
         font-weight: 600;
     }
@@ -118,6 +120,36 @@ def input_field(letter, item, key, remark="", formula="N/A", placeholder=None, *
     return val
 
 
+def money_input(letter, item, key, remark="", formula="N/A", placeholder=None, decimals=0):
+    if key in st.session_state:
+        cleaned = st.session_state[key].replace(",", "").strip()
+        if cleaned:
+            try:
+                st.session_state[key] = f"{float(cleaned):,.{decimals}f}"
+            except ValueError:
+                pass
+    with st.container(border=True):
+        st.markdown(
+            f'<div class="card-head">'
+            f'<span class="card-title"><span class="letter-badge">{letter}</span>{item}</span>'
+            f'<span class="formula-tag">{formula}</span></div>',
+            unsafe_allow_html=True,
+        )
+        text_val = st.text_input(
+            item, placeholder=placeholder,
+            label_visibility="collapsed", key=key,
+        )
+        if remark:
+            st.markdown(f'<div class="meta-line">{remark}</div>', unsafe_allow_html=True)
+    if text_val:
+        cleaned = text_val.replace(",", "").strip()
+        try:
+            return float(cleaned)
+        except ValueError:
+            return None
+    return None
+
+
 def computed_field(letter, item, formula, amount_str, color, requirement="", remark=""):
     req_html = f'<div class="req-line">Requirement: {requirement}</div>' if requirement else ""
     remark_html = f'<div class="meta-line">{remark}</div>' if remark else ""
@@ -133,7 +165,7 @@ def computed_field(letter, item, formula, amount_str, color, requirement="", rem
 
 
 st.markdown(
-    '<div class="app-title">🦐 Za Udang Enterprise</div>'
+    '<div class="app-title">ROI Calculator ⚡</div>'
     '<div class="fill-hint"><span class="fill-hint-icon">✏️</span>'
     '<span><strong>Fill up the yellow input box only</strong> — semua baris lain kira sendiri.</span></div>',
     unsafe_allow_html=True,
@@ -146,10 +178,10 @@ a_in = input_field("a", "Excise Rate", "a",
                     "Excise rate body type and engine. Refer to Table 1. "
                     "Please input percentage figure (cth: 60 untuk 60%).",
                     placeholder="cth: 60", format="%.2f", step=1.0)
-b_in = input_field("b", "Ex-Work", "b", "Total Cost to Produce Vehicles in Plant.",
-                    placeholder="cth: 65515.00", format="%.2f", step=100.0)
-c_in = input_field("c", "*ILP Standard", "c", "",
-                    placeholder="cth: 27269.00", format="%.2f", step=100.0)
+b_in = money_input("b", "Ex-Work", "b", "Total Cost to Produce Vehicles in Plant.",
+                    placeholder="cth: 65,515.00", decimals=2)
+c_in = money_input("c", "*ILP Standard", "c", "",
+                    placeholder="cth: 27,269.00", decimals=2)
 
 a, b, c = nz(a_in) / 100.0, nz(b_in), nz(c_in)
 
@@ -180,12 +212,12 @@ i = c * h
 computed_field("i", "ILP Amount (EEV)", "c*h", fmt(i), "purple",
                 remark="New ILP amount increased by (h) ratio from ILP standard")
 
-j_in = input_field("j", "Investment", "j", "Any investment related to automotive",
-                    placeholder="cth: 110000000.00", format="%.2f", step=100000.0)
-k_in = input_field("k", "Export (Net Export Value)", "k", "Any export, CBU or component.",
-                    placeholder="0 jika tiada", format="%.2f", step=1000.0)
-l_in = input_field("l", "Volume Request (units)", "l", "Any additional unit will require additional investment.",
-                    placeholder="cth: 3500", format="%.0f", step=10.0)
+j_in = money_input("j", "Investment", "j", "Any investment related to automotive",
+                    placeholder="cth: 110,000,000.00", decimals=2)
+k_in = money_input("k", "Export (Net Export Value)", "k", "Any export, CBU or component.",
+                    placeholder="0 jika tiada", decimals=2)
+l_in = money_input("l", "Volume Request (units)", "l", "Any additional unit will require additional investment.",
+                    placeholder="cth: 3,500", decimals=0)
 
 j, k, l = nz(j_in), nz(k_in), nz(l_in)
 
