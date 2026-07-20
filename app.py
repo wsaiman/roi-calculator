@@ -1,6 +1,6 @@
 import streamlit as st
 
-st.set_page_config(page_title="ROI Calculator", layout="centered")
+st.set_page_config(page_title="Za Udang Enterprise", page_icon="🦐", layout="centered")
 
 # ---------- Styling ----------
 st.markdown(
@@ -133,7 +133,7 @@ def computed_field(letter, item, formula, amount_str, color, requirement="", rem
 
 
 st.markdown(
-    '<div class="app-title">🚗 ROI Calculator</div>'
+    '<div class="app-title">🦐 Za Udang Enterprise</div>'
     '<div class="fill-hint"><span class="fill-hint-icon">✏️</span>'
     '<span><strong>Fill up the yellow input box only</strong> — semua baris lain kira sendiri.</span></div>',
     unsafe_allow_html=True,
@@ -142,14 +142,16 @@ st.markdown(
 # ==================================================================
 # Section 1 — National (baseline)
 # ==================================================================
-a_in = input_field("a", "Excise Rate", "a", "Excise rate body type and engine. Refer to Table 1.",
-                    placeholder="cth: 0.60", format="%.2f", step=0.01)
+a_in = input_field("a", "Excise Rate", "a",
+                    "Excise rate body type and engine. Refer to Table 1. "
+                    "Please input percentage figure (cth: 60 untuk 60%).",
+                    placeholder="cth: 60", format="%.2f", step=1.0)
 b_in = input_field("b", "Ex-Work", "b", "Total Cost to Produce Vehicles in Plant.",
                     placeholder="cth: 65515.00", format="%.2f", step=100.0)
 c_in = input_field("c", "*ILP Standard", "c", "",
                     placeholder="cth: 27269.00", format="%.2f", step=100.0)
 
-a, b, c = nz(a_in), nz(b_in), nz(c_in)
+a, b, c = nz(a_in) / 100.0, nz(b_in), nz(c_in)
 
 d = b * a
 computed_field("d", "Excise Duty (W/out ILP)", "b*a", fmt(d), "blue")
@@ -187,22 +189,27 @@ l_in = input_field("l", "Volume Request (units)", "l", "Any additional unit will
 
 j, k, l = nz(j_in), nz(k_in), nz(l_in)
 
-n = (b - i) * a
-o = (b + n - i) * 0.10
+n_raw = (b - i) * a
+n = min_duty if n_raw < min_duty else n_raw
+o = (b + n) * 0.10 * 0.15
 p = n + o
 q = g - p
 r = p * l
 s = q * l
-roi = (i + j + k + r - s) / s if s else 0.0
+roi = (j + k + r - s) / s if s else 0.0
+direct_exemption = (1 - n / d) if d else 0.0
 
 roi_color = "green" if roi >= 1.0 else "blue"
-computed_field("m", "ROI &gt; 100%", "[i+j+k+r-s]/s", f"{roi * 100:,.0f}%", roi_color,
+computed_field("m", "ROI &gt; 100%", "[j+k+r-s]/s", f"{roi * 100:,.0f}%", roi_color,
                 requirement="100%", remark="Must be &gt;= 100% to be get additional ILP (EEV Incentive)")
 
-computed_field("n", "Excise Duty Per unit", "(b-i)*a", fmt(n), "purple",
+computed_field("n", "Excise Duty Per unit", "MAX[(b-i)*a, min 15%]", fmt(n), "purple",
                 requirement=fmt(min_duty), remark="MIN. 15% Duty payment to gov for non-national")
 
-computed_field("o", "Sales Tax Per Unit", "(b+n-i)*10%", fmt(o), "purple")
+computed_field("★", "Direct Exemption", "1-(n/d)", f"{direct_exemption * 100:,.0f}%", "purple",
+                remark="% of excise duty exempted vs. paying full duty without ILP")
+
+computed_field("o", "Sales Tax Per Unit", "(b+n)*10%*15%", fmt(o), "purple")
 
 computed_field("p", "Tax Payment per unit", "n+o", fmt(p), "purple",
                 remark="Actual tax paid with EEV incentive")
@@ -218,5 +225,5 @@ computed_field("s", "Total Taxes Foregone", "q*l", fmt(s), "purple",
 
 st.caption(
     "Nota: kotak kuning sahaja yang boleh diedit (a, b, c, h, j, k, l), kosong secara default. "
-    "Semua baris lain dikira secara automatik mengikut formula asal dalam ROI Calculator.xlsx."
+    "Semua baris lain dikira secara automatik mengikut formula asal dalam EEV Calculator.xlsx."
 )
